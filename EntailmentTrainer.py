@@ -35,7 +35,7 @@ class EntailmentTrainer(Seq2SeqTrainer):
 
 
     def inference_score(self, sent_pairs):
-        softmax = torch.nn.Softmax(dim=0)
+        softmax = torch.nn.Softmax(dim=1)
         inputs = self.tokenizer_entail(sent_pairs, return_tensors="pt", padding=True)
 
         #inputs = [self.tokenizer_entail(datum, return_tensors="pt", padding=True) for datum in sent_pairs]
