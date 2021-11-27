@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 from functools import partial
-from src.utils.registry import register
+from RE2.src.utils.registry import register
 from . import Linear
 
 registry = {}
