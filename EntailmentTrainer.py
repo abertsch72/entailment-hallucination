@@ -9,7 +9,8 @@ class EntailmentTrainer(Seq2SeqTrainer):
         self.loss_fnct = torch.nn.CrossEntropyLoss()
         self.tokenizer_entail = AutoTokenizer.from_pretrained('textattack/albert-base-v2-snli')
         self.model_entail = AlbertForSequenceClassification.from_pretrained('textattack/albert-base-v2-snli')
-
+        self.device = torch.device("cuda")
+        self.model_entail.to(self.device)
         # Evaluator(model_path="textattack/albert-base-v2-snli", data_file=None)
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -37,7 +38,7 @@ class EntailmentTrainer(Seq2SeqTrainer):
 
     def inference_score(self, sent_pairs):
         softmax = torch.nn.Softmax(dim=1)
-        inputs = self.tokenizer_entail(sent_pairs, return_tensors="pt", padding=True)
+        inputs = self.tokenizer_entail(sent_pairs, return_tensors="pt", padding=True).to(self.device)
 
         #inputs = [self.tokenizer_entail(datum, return_tensors="pt", padding=True) for datum in sent_pairs]
         outputs = self.model_entail(**inputs)
