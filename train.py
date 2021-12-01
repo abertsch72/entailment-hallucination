@@ -37,6 +37,7 @@ from transformers import (
 )
 
 from EntailmentTrainer import EntailmentTrainer
+from EntailmentReward import EntailmentReward
 
 from tabulate import tabulate
 import nltk
@@ -71,7 +72,7 @@ Download model and tokenizer. Use default parameters or try custom values (see [
 model_name = "facebook/bart-base"
 trained_model_name = "entail-checkpoint-10000/checkpoint-10000/"
 
-model = AutoModelForSeq2SeqLM.from_pretrained(trained_model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Set model parameters or use the default
@@ -208,7 +209,7 @@ training_args = Seq2SeqTrainingArguments(
 
 data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-trainer = Seq2SeqTrainer(
+trainer = EntailmentReward(
     model=model,
     args=training_args,
     data_collator=data_collator,
@@ -246,7 +247,7 @@ if WANDB_INTEGRATION:
 #%%wandb
 # uncomment to display Wandb charts
 
-#trainer.train()
+trainer.train()
 
 """Evaluate after fine-tuning"""
 
