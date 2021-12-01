@@ -69,9 +69,9 @@ Download model and tokenizer. Use default parameters or try custom values (see [
 """
 
 model_name = "facebook/bart-base"
+trained_model_name = "entail-checkpoint-10000/checkpoint-10000/"
 
-
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(trained_model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Set model parameters or use the default
@@ -194,8 +194,8 @@ training_args = Seq2SeqTrainingArguments(
     num_train_epochs=15,  # demo
     do_train=True,
     do_eval=True,
-    per_device_train_batch_size=1, #32,  # demo
-    per_device_eval_batch_size=1, #32,
+    per_device_train_batch_size=4, #32,  # demo
+    per_device_eval_batch_size=4, #32,
     # learning_rate=3e-05,
     warmup_steps=500,
     weight_decay=0.1,
@@ -208,7 +208,7 @@ training_args = Seq2SeqTrainingArguments(
 
 data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-trainer = EntailmentTrainer(
+trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
     data_collator=data_collator,
@@ -246,7 +246,7 @@ if WANDB_INTEGRATION:
 #%%wandb
 # uncomment to display Wandb charts
 
-trainer.train()
+#trainer.train()
 
 """Evaluate after fine-tuning"""
 

@@ -1,3 +1,7 @@
+results3/
+checkpoint-10000/
+entail-checkpoint-10000/
+checkpoint-12500/
 .idea/
 logs/
 wandb/
