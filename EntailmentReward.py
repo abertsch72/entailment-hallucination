@@ -42,7 +42,7 @@ class EntailmentReward(Seq2SeqTrainer):
 
             custom_loss = custom_loss.to('cuda')
             #custom_loss += loss.to('cuda')
-        loss *= (1 + custom_loss)
+        loss *= custom_loss
 
         return (loss, outputs) if return_outputs else loss
 
@@ -54,6 +54,6 @@ class EntailmentReward(Seq2SeqTrainer):
         outputs = self.model_entail(**inputs)
         logits = outputs.logits
         #return logits[:, 2]
-        return softmax(logits)[:, 0]
+        return 1 - softmax(logits)[:, 0] # contradiction score
 
 
