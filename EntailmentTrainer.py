@@ -30,7 +30,7 @@ class EntailmentTrainer(Seq2SeqTrainer):
         entail_pairs = []
         pair_len = [0]
         for i in range(len(gen_outputs)):
-            curr_pairs = [[gen_outputs[i], sent] for sent in input_docs[i].split("\n")]
+            curr_pairs = [[sent, gen_outputs[i]] for sent in input_docs[i].split("\n")]
             entail_pairs.extend(curr_pairs)
             pair_len.append(pair_len[-1] + len(curr_pairs))
         custom_loss = self.inference_score(entail_pairs)
