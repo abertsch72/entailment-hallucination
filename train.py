@@ -37,6 +37,7 @@ from transformers import (
 )
 
 from EntailmentTrainer import EntailmentTrainer
+from EntailmentReward import EntailmentReward
 
 from tabulate import tabulate
 import nltk
@@ -69,10 +70,10 @@ Download model and tokenizer. Use default parameters or try custom values (see [
 """
 
 model_name = "facebook/bart-base"
-trained_model_name = "entail-checkpoint-10000/checkpoint-10000/"
+trained_model_name = "checkpoint-200000/"
 
 model = AutoModelForSeq2SeqLM.from_pretrained(trained_model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(trained_model_name)
 
 # Set model parameters or use the default
 # print(model.config)
@@ -89,7 +90,6 @@ decoder_max_length = 56
 
 For demonstration, we are only using a small portion of the data.
 """
-
 dataset = datasets.load_dataset("xsum")
 
 """### Prepare
@@ -101,7 +101,14 @@ dataset = datasets.load_dataset("xsum")
 
 train_data_txt, validation_data_txt = dataset["train"], dataset["validation"]
 
-dataset["train"]
+TOY = True
+NUM_EPOCHS = 5
+WARMUP_STEPS = 500
+if TOY:
+    train_data_txt = dataset["train"].filter(lambda example, indice: indice <30, with_indices=True)
+    validation_data_txt = dataset["validation"].filter(lambda example, indice: indice <16, with_indices=True)
+    NUM_EPOCHS = 15
+    WARMUP_STEPS = 50
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):
     source, target = batch["document"], batch["summary"]
@@ -190,14 +197,14 @@ def compute_metrics(eval_preds):
 """### Training arguments"""
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="results3",
-    num_train_epochs=15,  # demo
+    output_dir="results",
+    num_train_epochs=NUM_EPOCHS,  # demo
     do_train=True,
     do_eval=True,
-    per_device_train_batch_size=4, #32,  # demo
-    per_device_eval_batch_size=4, #32,
+    per_device_train_batch_size=2, #32,  # demo
+    per_device_eval_batch_size=2, #32,
     # learning_rate=3e-05,
-    warmup_steps=500,
+    warmup_steps=WARMUP_STEPS,
     weight_decay=0.1,
     label_smoothing_factor=0.1,
     predict_with_generate=True,
@@ -208,7 +215,8 @@ training_args = Seq2SeqTrainingArguments(
 
 data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-trainer = Seq2SeqTrainer(
+trainer = EntailmentReward(
+#trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
     data_collator=data_collator,
@@ -246,7 +254,7 @@ if WANDB_INTEGRATION:
 #%%wandb
 # uncomment to display Wandb charts
 
-#trainer.train()
+trainer.train()
 
 """Evaluate after fine-tuning"""
 
