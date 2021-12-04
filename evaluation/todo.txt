@@ -1,0 +1,12 @@
+1 get a de-duplicated list of summary IDs used in the evaluation (should be 100 IDs)
+2 get a list of the source documents corresponding to those summary
+3 get a list of summaries corresponding to each source doc; should be 6 (5 from the paper, 1 gold label)
+4 set up entailment calculations; for each doc/summary pair:
+    - calculate min/max/average entailment score
+    - calculate min/max/average contradiction score
+    - calculate the above, but normalized by the score of the gold label
+    - calculate the number of sentences with higher entailment in generated summary than gold label summary
+    - calculate the number of sentences with higher contradiction in generated summary than gold label summary
+5 put all these numbers in the eval_scores_xsum_summaries csv
+6 find the metrics which correlate best to presence/absence of hallucinations
+7 find the metrics which correlate best to factuality label
