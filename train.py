@@ -101,12 +101,12 @@ dataset = datasets.load_dataset("xsum")
 
 train_data_txt, validation_data_txt = dataset["train"], dataset["validation"]
 
-TOY = False
+TOY = True
 NUM_EPOCHS = 5
 WARMUP_STEPS = 500
 if TOY:
-    train_data_txt = dataset["train"].filter(lambda example, indice: indice <10, with_indices=True)
-    validation_data_txt = dataset["train"].filter(lambda example, indice: indice <16, with_indices=True)
+    train_data_txt = dataset["train"].filter(lambda example, indice: indice <30, with_indices=True)
+    validation_data_txt = dataset["validation"].filter(lambda example, indice: indice <16, with_indices=True)
     NUM_EPOCHS = 15
     WARMUP_STEPS = 50
 

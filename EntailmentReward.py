@@ -10,7 +10,7 @@ class EntailmentReward(Seq2SeqTrainer):
         self.loss_fnct = torch.nn.CrossEntropyLoss()
         self.tokenizer_entail = AutoTokenizer.from_pretrained('textattack/albert-base-v2-snli')
         self.model_entail = AlbertForSequenceClassification.from_pretrained('textattack/albert-base-v2-snli')
-        self.device = torch.device("cuda")
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         for param in self.model_entail.parameters():
           param.requires_grad = False
         self.model_entail.to(self.device)
@@ -33,19 +33,39 @@ class EntailmentReward(Seq2SeqTrainer):
 
             entail_pairs = []
             pair_len = [0]
+            indices = [0]
             for i in range(len(gen_outputs)):
-                curr_pairs = [[gen_outputs[i], sent] for sent in input_docs[i].split("\n")]
+                curr_pairs = [[sent, gen_outputs[i]] for sent in input_docs[i].split("\n")]
+                indices.append(indices[-1] + len(curr_pairs))
                 entail_pairs.extend(curr_pairs)
                 pair_len.append(pair_len[-1] + len(curr_pairs))
+
+            #print(len(entail_pairs))
+            #print(indices)
+            #print(entail_pairs[:indices[0]])
+            #print(entail_pairs[indices[0]:indices[1]])
             reward = self.inference_score(entail_pairs)
-            reward = torch.FloatTensor([1-torch.max(reward[pair_len[i-1]:pair_len[i]]) for i in range(1, len(pair_len))])
+
+            indiv_rewards = []
+            for i in range(len(indices) - 1):
+                scores = reward[indices[i]:indices[i+1]]
+                #print(scores.shape)
+                indiv_rewards.append(torch.max(scores[:,0]))
+                #print(scores)
+
+            #print(indiv_rewards)
+            reward = torch.mean(torch.FloatTensor(indiv_rewards))
+            #print(reward)
+            reward = 1-reward
+            #print(reward)
+
+            #reward = torch.FloatTensor([1-torch.max(reward[pair_len[i-1]:pair_len[i]]) for i in range(1, len(pair_len))])
 
             # to try: reward using different calculation, normalized reward
-            reward = torch.max(reward)
 
             reward = reward.to(self.device)
 
-        loss += reward * self_loss
+        loss = 0.1 * loss + 0.9 * reward * self_loss
 
         return (loss, outputs) if return_outputs else loss
 
@@ -53,10 +73,9 @@ class EntailmentReward(Seq2SeqTrainer):
     def inference_score(self, sent_pairs):
         softmax = torch.nn.Softmax(dim=1)
         inputs = self.tokenizer_entail(sent_pairs, return_tensors="pt", padding=True).to(self.device)
-        #inputs = [self.tokenizer_entail(datum, return_tensors="pt", padding=True) for datum in sent_pairs]
         outputs = self.model_entail(**inputs)
         logits = outputs.logits
-        #return logits[:, 2]
-        return 1 - softmax(logits)[:, 0] # contradiction score
+
+        return softmax(logits)
 
 
