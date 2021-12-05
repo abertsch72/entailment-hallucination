@@ -2,12 +2,9 @@ from transformers import Seq2SeqTrainer, AutoTokenizer, AlbertForSequenceClassif
 
 import torch
 
-from RE2.src.evaluator import Evaluator
-
 class EntailmentReward(Seq2SeqTrainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.loss_fnct = torch.nn.CrossEntropyLoss()
         self.tokenizer_entail = AutoTokenizer.from_pretrained('textattack/albert-base-v2-snli')
         self.model_entail = AlbertForSequenceClassification.from_pretrained('textattack/albert-base-v2-snli')
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -15,59 +12,66 @@ class EntailmentReward(Seq2SeqTrainer):
           param.requires_grad = False
         self.model_entail.to(self.device)
 
-        # Evaluator(model_path="textattack/albert-base-v2-snli", data_file=None)
-
     def compute_loss(self, model, inputs, return_outputs=False):
-        # implement entailment scoring here
-        # non-differentiable because of model generation? how to handle this?
-        # might just work naively?
-        loss, outputs = super().compute_loss(model, inputs, return_outputs=True)
+        base_loss, outputs = super().compute_loss(model, inputs, return_outputs=True)
         gen_outputs = model.generate(inputs["input_ids"], attention_mask=inputs["attention_mask"], max_length=56,
                                      output_scores=True, return_dict_in_generate=True)
 
-        self_loss = torch.mean(gen_outputs['sequences_scores'])
+        self_loss = -(gen_outputs['sequences_scores'])
+        self_loss.requires_grad = True
+        self_loss = torch.mean(self_loss)
         gen_outputs = gen_outputs['sequences']
         with torch.no_grad():
             gen_outputs = self.tokenizer.batch_decode(gen_outputs, skip_special_tokens=True)
             input_docs = self.tokenizer.batch_decode(inputs["input_ids"], skip_special_tokens=True)
+            gold_summaries = self.tokenizer.batch_decode(inputs["decoder_input_ids"], skip_special_tokens=True)
+
 
             entail_pairs = []
+            gold_pairs = []
             pair_len = [0]
             indices = [0]
             for i in range(len(gen_outputs)):
                 curr_pairs = [[sent, gen_outputs[i]] for sent in input_docs[i].split("\n")]
+                curr_gold = [[sent, gold_summaries[i]] for sent in input_docs[i].split("\n")]
                 indices.append(indices[-1] + len(curr_pairs))
                 entail_pairs.extend(curr_pairs)
+                gold_pairs.extend(curr_gold)
                 pair_len.append(pair_len[-1] + len(curr_pairs))
 
-            #print(len(entail_pairs))
-            #print(indices)
-            #print(entail_pairs[:indices[0]])
-            #print(entail_pairs[indices[0]:indices[1]])
-            reward = self.inference_score(entail_pairs)
+            reward_type = "entailment_max"
+            inference_scores = self.inference_score(entail_pairs)
+            gold_inference_scores = self.inference_score(gold_pairs)
 
-            indiv_rewards = []
-            for i in range(len(indices) - 1):
-                scores = reward[indices[i]:indices[i+1]]
-                #print(scores.shape)
-                indiv_rewards.append(torch.max(scores[:,0]))
-                #print(scores)
+            reward = self.calculate_reward(inference_scores, indices, reward_type=reward_type)
+            gold_reward = self.calculate_reward(gold_inference_scores, indices, reward_type=reward_type)
 
-            #print(indiv_rewards)
-            reward = torch.mean(torch.FloatTensor(indiv_rewards))
-            #print(reward)
-            reward = 1-reward
-            #print(reward)
+            reward = reward - gold_reward
+            reward.to(self.device)
 
-            #reward = torch.FloatTensor([1-torch.max(reward[pair_len[i-1]:pair_len[i]]) for i in range(1, len(pair_len))])
-
-            # to try: reward using different calculation, normalized reward
-
-            reward = reward.to(self.device)
-
-        loss = 0.1 * loss + 0.9 * reward * self_loss
-
+        loss = torch.sum(self_loss * reward)
+        loss += base_loss
         return (loss, outputs) if return_outputs else loss
+
+
+    def calculate_reward(self, inference_scores, indices, reward_type: str):
+        indiv_rewards = []
+        for i in range(len(indices) - 1):
+            scores = inference_scores[indices[i]:indices[i+1]]
+            if reward_type == "entailment_mean":
+                indiv_rewards.append(1 - torch.mean(scores[:, 0]))
+            elif reward_type == "entailment_max":
+                indiv_rewards.append(1 - torch.max(scores[:, 0]))
+            elif reward_type == "entailment_min":
+                indiv_rewards.append(1 - torch.min(scores[:, 0]))
+            elif reward_type == "contradiction_mean":
+                indiv_rewards.append(torch.mean(scores[:, 2]))
+            elif reward_type == "contradiction_max":
+                indiv_rewards.append(torch.max(scores[:, 2]))
+            elif reward_type == "contradiction_min":
+                indiv_rewards.append(torch.min(scores[:, 2]))
+
+        return torch.mean(torch.FloatTensor(indiv_rewards))
 
 
     def inference_score(self, sent_pairs):

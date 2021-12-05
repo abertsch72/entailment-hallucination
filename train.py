@@ -25,7 +25,7 @@ USE_RL = True
 EVAL_ONLY = False
 encoder_max_length = 512
 decoder_max_length = 56
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 WARMUP_STEPS = 500
 
 
@@ -47,9 +47,9 @@ metric = datasets.load_metric("rouge")
 train_data_txt, validation_data_txt = dataset["train"], dataset["validation"]
 
 if TOY:
-    train_data_txt = dataset["train"].filter(lambda example, indice: indice <30, with_indices=True)
+    train_data_txt = dataset["train"].filter(lambda example, indice: indice <50, with_indices=True)
     validation_data_txt = dataset["validation"].filter(lambda example, indice: indice <16, with_indices=True)
-    NUM_EPOCHS = 15
+    NUM_EPOCHS = 10
     WARMUP_STEPS = 50
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):
