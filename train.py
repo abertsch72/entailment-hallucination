@@ -20,12 +20,14 @@ from EntailmentReward import EntailmentReward
 
 # CONSTANTS
 TOY = False
+SUBSET = True
 USE_TRAINED = False
 USE_RL = True
+REGULARIZE = False
 EVAL_ONLY = False
 encoder_max_length = 512
-decoder_max_length = 56
-NUM_EPOCHS = 10
+decoder_max_length = 32
+NUM_EPOCHS = 5
 WARMUP_STEPS = 500
 
 
@@ -51,6 +53,11 @@ if TOY:
     validation_data_txt = dataset["validation"].filter(lambda example, indice: indice <16, with_indices=True)
     NUM_EPOCHS = 10
     WARMUP_STEPS = 50
+
+if SUBSET:
+    train_data_txt = dataset["train"].filter(lambda example, indice: indice < 25000, with_indices=True)
+    validation_data_txt = dataset["validation"].filter(lambda example, indice: indice < 10000, with_indices=True)
+    NUM_EPOCHS = 1
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):
     source, target = batch["document"], batch["summary"]

@@ -1,6 +1,9 @@
 from transformers import Seq2SeqTrainer, AutoTokenizer, AlbertForSequenceClassification
 
+from train import REGULARIZE
+
 import torch
+
 
 class EntailmentReward(Seq2SeqTrainer):
     def __init__(self, *args, **kwargs):
@@ -24,7 +27,8 @@ class EntailmentReward(Seq2SeqTrainer):
         with torch.no_grad():
             gen_outputs = self.tokenizer.batch_decode(gen_outputs, skip_special_tokens=True)
             input_docs = self.tokenizer.batch_decode(inputs["input_ids"], skip_special_tokens=True)
-            gold_summaries = self.tokenizer.batch_decode(inputs["decoder_input_ids"], skip_special_tokens=True)
+            if REGULARIZE:
+                gold_summaries = self.tokenizer.batch_decode(inputs["decoder_input_ids"], skip_special_tokens=True)
 
 
             entail_pairs = []
@@ -33,20 +37,23 @@ class EntailmentReward(Seq2SeqTrainer):
             indices = [0]
             for i in range(len(gen_outputs)):
                 curr_pairs = [[sent, gen_outputs[i]] for sent in input_docs[i].split("\n")]
-                curr_gold = [[sent, gold_summaries[i]] for sent in input_docs[i].split("\n")]
+                if REGULARIZE:
+                    curr_gold = [[sent, gold_summaries[i]] for sent in input_docs[i].split("\n")]
+                    gold_pairs.extend(curr_gold)
+
                 indices.append(indices[-1] + len(curr_pairs))
                 entail_pairs.extend(curr_pairs)
-                gold_pairs.extend(curr_gold)
                 pair_len.append(pair_len[-1] + len(curr_pairs))
 
             reward_type = "entailment_max"
             inference_scores = self.inference_score(entail_pairs)
-            gold_inference_scores = self.inference_score(gold_pairs)
-
             reward = self.calculate_reward(inference_scores, indices, reward_type=reward_type)
-            gold_reward = self.calculate_reward(gold_inference_scores, indices, reward_type=reward_type)
 
-            reward = reward - gold_reward
+            if REGULARIZE:
+                gold_inference_scores = self.inference_score(gold_pairs)
+                gold_reward = self.calculate_reward(gold_inference_scores, indices, reward_type=reward_type)
+                reward = reward - gold_reward
+
             reward.to(self.device)
 
         loss = torch.sum(self_loss * reward)
