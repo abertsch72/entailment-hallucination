@@ -17,19 +17,7 @@ import nltk
 from datetime import datetime
 
 from EntailmentReward import EntailmentReward
-
-# CONSTANTS
-TOY = False
-SUBSET = True
-USE_TRAINED = False
-USE_RL = True
-REGULARIZE = False
-EVAL_ONLY = False
-encoder_max_length = 512
-decoder_max_length = 32
-NUM_EPOCHS = 5
-WARMUP_STEPS = 500
-
+from constants import *
 
 model_name = "facebook/bart-base"
 trained_model_name = "results3/checkpoint-350000/"

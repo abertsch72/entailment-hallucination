@@ -1,6 +1,6 @@
 from transformers import Seq2SeqTrainer, AutoTokenizer, AlbertForSequenceClassification
 
-from train import REGULARIZE
+from constants import REGULARIZE
 
 import torch
 
