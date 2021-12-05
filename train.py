@@ -45,7 +45,7 @@ if TOY:
 if SUBSET:
     train_data_txt = dataset["train"].filter(lambda example, indice: indice < 25000, with_indices=True)
     validation_data_txt = dataset["validation"].filter(lambda example, indice: indice < 10000, with_indices=True)
-    NUM_EPOCHS = 1
+    NUM_EPOCHS = 5
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):
     source, target = batch["document"], batch["summary"]

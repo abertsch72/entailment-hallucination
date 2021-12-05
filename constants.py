@@ -3,7 +3,7 @@
 TOY = False
 SUBSET = True
 USE_TRAINED = False
-USE_RL = False
+USE_RL = True
 REGULARIZE = False
 EVAL_ONLY = False
 encoder_max_length = 512
