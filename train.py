@@ -17,17 +17,7 @@ import nltk
 from datetime import datetime
 
 from EntailmentReward import EntailmentReward
-
-# CONSTANTS
-TOY = False
-USE_TRAINED = False
-USE_RL = True
-EVAL_ONLY = False
-encoder_max_length = 512
-decoder_max_length = 56
-NUM_EPOCHS = 10
-WARMUP_STEPS = 500
-
+from constants import *
 
 model_name = "facebook/bart-base"
 trained_model_name = "results3/checkpoint-350000/"
@@ -51,6 +41,11 @@ if TOY:
     validation_data_txt = dataset["validation"].filter(lambda example, indice: indice <16, with_indices=True)
     NUM_EPOCHS = 10
     WARMUP_STEPS = 50
+
+if SUBSET:
+    train_data_txt = dataset["train"].filter(lambda example, indice: indice < 25000, with_indices=True)
+    validation_data_txt = dataset["validation"].filter(lambda example, indice: indice < 10000, with_indices=True)
+    NUM_EPOCHS = 5
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):
     source, target = batch["document"], batch["summary"]
@@ -131,8 +126,8 @@ training_args = Seq2SeqTrainingArguments(
     num_train_epochs=NUM_EPOCHS,  # demo
     do_train=True,
     do_eval=True,
-    per_device_train_batch_size=2, #32,  # demo
-    per_device_eval_batch_size=2, #32,
+    per_device_train_batch_size=8, #32,  # demo
+    per_device_eval_batch_size=8, #32,
     # learning_rate=3e-05,
     warmup_steps=WARMUP_STEPS,
     weight_decay=0.1,
