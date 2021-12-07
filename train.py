@@ -20,7 +20,7 @@ from EntailmentReward import EntailmentReward
 from constants import *
 
 model_name = "facebook/bart-base"
-trained_model_name = "results3/checkpoint-350000/"
+trained_model_name = "results/old1/checkpoint-15500/"
 
 if USE_TRAINED:
     model = AutoModelForSeq2SeqLM.from_pretrained(trained_model_name)
@@ -44,7 +44,7 @@ if TOY:
 
 if SUBSET:
     train_data_txt = dataset["train"].filter(lambda example, indice: indice < 25000, with_indices=True)
-    validation_data_txt = dataset["validation"].filter(lambda example, indice: indice < 10000, with_indices=True)
+    validation_data_txt = dataset["test"].filter(lambda example, indice: indice < 10000, with_indices=True)
     NUM_EPOCHS = 5
 
 def batch_tokenize_preprocess(batch, tokenizer, max_source_length, max_target_length):

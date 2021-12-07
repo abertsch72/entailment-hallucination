@@ -16,7 +16,7 @@ from datetime import datetime
 from EntailmentReward import EntailmentReward
 from constants import *
 from train import batch_tokenize_preprocess, compute_metrics, generate_summary
-trained_model_name = "final_models/bart_baseline"
+trained_model_name = "results/old1/checkpoint-15500"
 
 
 
@@ -41,10 +41,10 @@ test_data = test_data_txt.map(
 training_args = Seq2SeqTrainingArguments(
     output_dir="results",
     num_train_epochs=NUM_EPOCHS,  # demo
-    do_train=True,
+    do_train=False,
     do_eval=True,
-    per_device_train_batch_size=2, #32,  # demo
-    per_device_eval_batch_size=2, #32,
+    per_device_train_batch_size=16, #32,  # demo
+    per_device_eval_batch_size=16, #32,
     # learning_rate=3e-05,
     warmup_steps=WARMUP_STEPS,
     weight_decay=0.1,
